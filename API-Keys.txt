@@ -1,0 +1,5 @@
+Get your api keys in new private browser window for each key and new proxy for each key on https://cohere.com .
+
+Insert api keys and for easy management keep them in bat file .choose-ai and rotate them as needed. 
+
+Note the date when the key is spent in the file so you know when it resets. They reset once per month and iirc are 1000 api calls.
