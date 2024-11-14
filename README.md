@@ -3,7 +3,7 @@ Simple chat script that connects to cohere's api.
 
 # Installation
 ### Auto
-Check .Install-UV+Venv.bat contents so you know what it does. And then run it.  
+Check .Install.bat contents so you know what it does. And then run it.  
 This will install python module UV and build a venv in cwd, and install other modules into the venv.
 
 ### Manual
