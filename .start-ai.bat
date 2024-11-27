@@ -45,24 +45,16 @@ if "%charname%"=="" (
 )
 
 REM Set up environment and run Cohere script
-REM Backup API Keys
-REM date/mail: xxx	xxx@mozmail.com
-REM set COHERE_API_KEY=xxxxxxx
+REM Backup API Keys, save date to know when it resets
+REM ───────────────────────────────────────────────────────────────
+REM tempmail1@example.com 	20-november 23456789-abcd-1234-efgh-56789ijklmno
+REM tempmail2@example.com 	27-november 35648974-abcd-1234-efgh-56789ijklmno
+REM tempmail3@example.com 	ACTIVE 		12345678-abcd-1234-efgh-56789ijklmno
+REM ───────────────────────────────────────────────────────────────
 
-REM date/mail: xxx xxx@mozmail.com
-REM set COHERE_API_KEY=xxxxxxx
-
-REM date/mail: xxx xxx@mozmail.com
-REM set COHERE_API_KEY=xxxxxxx
-
-REM date/mail: xxx	xxx@mozmail.com
-REM set COHERE_API_KEY=xxxxxxx
-
-REM date/mail: xxx	xxx@mozmail.com
-REM set COHERE_API_KEY=xxxxxxx
-
-REM mail: 	xxx, 2024	xxx@xxx.me
-set COHERE_API_KEY=xxxACTIVEAPIKEYxxx
+set COHERE_API_KEY=xxxREPLACE-WITH-APIKEYxxxx
+REM like this 
+REM set COHERE_API_KEY=cWgXtmQS7Scs123wEnUpjh24hrFY4qJplzJGwVcx
 
 if "%charname%"=="" (
     echo No AI selected, exiting...

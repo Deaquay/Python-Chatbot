@@ -8,6 +8,8 @@ import wave
 import time  # To simulate streaming behavior
 import subprocess
 import threading
+import logging
+from typing import Dict, List, Any, Optional
 from colorama import Fore, Style, init
 from difflib import SequenceMatcher  # For response similarity check
 # from TTS.api import TTS  # For Coqui TTS integration
@@ -24,24 +26,6 @@ init(autoreset=True)
 api_key = os.getenv("COHERE_API_KEY")
 
 # Initialize the Cohere client with the API key
-proxies = {
-    'http': os.getenv('HTTP_PROXY'),
-    'https': os.getenv('HTTPS_PROXY')
-}
-
-# Check the IP address using the proxy at the beginning of the script.
-def check_ip():
-    try:
-        response = requests.get("http://ipinfo.io/ip", proxies=proxies)
-        response.raise_for_status()
-        print(f"ProxyCheck, Your IP address is: {response.text.strip()}")
-    except requests.RequestException as e:
-        print(f"Error checking IP address: {e}")
-        sys.exit(1)
-        
-check_ip()
-
-# Initialize the Cohere client without proxies
 co = cohere.ClientV2(api_key=api_key)
 
 # Get the bot name from the command-line argument
@@ -59,6 +43,13 @@ params = {
     "p": 0.9,
     "safety_mode": "NONE"      # Set safety mode to NONE
 }
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s: %(message)s',
+    filename='keyword_processing.log'
+)
 
 # Declare the global 'keywords' variable at the top of the script
 keywords = {}
@@ -102,6 +93,149 @@ except FileNotFoundError:
     sys.exit(1)
 
 print(f"Loaded system message for bot '{assistant_name}'.\n\nLoaded Keyword files:\n" + "\n".join(keys_files))
+
+# Load the Keyword files specified in the configuration
+class KeywordManager:
+    def __init__(self):
+        """
+        Initialize the KeywordManager with tracking mechanisms.
+        
+        Attributes:
+        - keywords: Dictionary of all loaded keywords
+        - processed_keywords: Set to track processed keywords
+        - pending_keywords: Queue of keywords to be processed
+        """
+        self.keywords: Dict[str, Dict[str, Any]] = {}
+        self.processed_keywords: set = set()
+        self.pending_keywords: List[str] = []
+
+    def load_keywords(self, keys_files: List[str]) -> None:
+        """
+        Load keywords from specified files with enhanced error handling.
+        
+        Args:
+            keys_files (List[str]): List of keyword file paths
+        """
+        for keys_file in keys_files:
+            try:
+                with open(keys_file, "r") as file:
+                    for line in file:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        
+                        try:
+                            title, key_string, content = line.split(";", 2)
+                            
+                            # Clean and process keys
+                            keys = [k.strip().lower() for k in key_string.split(",") if k.strip()]
+                            
+                            # Add to keywords dictionary
+                            for key in keys:
+                                self.keywords[key] = {
+                                    "title": title,
+                                    "keys": keys,
+                                    "content": content.strip()
+                                }
+                            
+                            logging.info(f"Loaded keyword: {title}")
+                        
+                        except ValueError as parse_err:
+                            logging.error(f"Invalid keyword format in file {keys_file}: {line}. Error: {parse_err}")
+            
+            except FileNotFoundError:
+                logging.warning(f"Keyword file not found: {keys_file}")
+            except IOError as io_err:
+                logging.error(f"Error reading keyword file {keys_file}: {io_err}")
+
+    def find_matching_keywords(self, input_text: str) -> List[Dict[str, Any]]:
+        """
+        Find keywords matching the input text.
+        
+        Args:
+            input_text (str): Text to search for keywords
+        
+        Returns:
+            List of matching keyword dictionaries
+        """
+        input_text_lower = input_text.lower()
+        matching_keywords = []
+        
+        for key, keyword_data in self.keywords.items():
+            if key in input_text_lower:
+                matching_keywords.append(keyword_data)
+        
+        return matching_keywords
+
+    def queue_new_keywords(self, matching_keywords: List[Dict[str, Any]]) -> None:
+        """
+        Queue new keywords for processing, avoiding duplicates.
+        
+        Args:
+            matching_keywords (List[Dict]): List of matching keywords
+        """
+        for keyword in matching_keywords:
+            # Prefer the first key as a unique identifier
+            key_identifier = keyword['keys'][0].lower()
+            
+            # Only add if not already processed or pending
+            if (key_identifier not in self.processed_keywords and 
+                key_identifier not in self.pending_keywords):
+                self.pending_keywords.append(key_identifier)
+                logging.info(f"Queued new keyword: {key_identifier}")
+
+    def process_next_keyword(self) -> Optional[Dict[str, Any]]:
+        """
+        Process and return the next pending keyword.
+        
+        Returns:
+            Optional dictionary with keyword content, or None if no keywords
+        """
+        if not self.pending_keywords:
+            return None
+        
+        # Get and remove the first pending keyword
+        keyword_to_process = self.pending_keywords.pop(0)
+        
+        # Mark as processed
+        self.processed_keywords.add(keyword_to_process)
+        
+        # Retrieve keyword details
+        keyword_entry = self.keywords.get(keyword_to_process)
+        
+        if keyword_entry:
+            logging.info(f"Processing keyword: {keyword_to_process}")
+            return {
+                "formatted_content": self._format_keyword_message(
+                    keyword_entry['title'], 
+                    keyword_entry['content']
+                )
+            }
+        
+        logging.warning(f"No content found for keyword: {keyword_to_process}")
+        return None
+
+    def _format_keyword_message(self, title: str, content: str) -> str:
+        """
+        Format the keyword content for injection into chat history.
+        
+        Args:
+            title (str): Keyword title
+            content (str): Keyword content
+        
+        Returns:
+            Formatted message string
+        """
+        return (
+            "!!AI_IGNORE_FORMAT!!\n"
+            f"Reference Material:\n"
+            f" - {title}\n"
+            f"{content}"
+        )
+
+# Initialize the KeywordManager
+keyword_manager = KeywordManager()
+keyword_manager.load_keywords(keys_files)
 
 # Start with an empty conversation history
 history_file = f"{assistant_name}_history.json"
@@ -158,57 +292,57 @@ def repeat_last_message(messages):
         print(Fore.YELLOW + "No previous conversation found.")
 
 # Retry the last response if the user types 'retry'
-def retry_last_response(messages, additional_instruction=None):
-    """Retry the last user message with an optional additional instruction."""
-    if len(messages) > 1:  # Check if there's more than just the system message
+def retry_last_response(
+    messages: List[Dict[str, str]], 
+    co, 
+    params: Dict[str, Any], 
+    additional_instruction: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Retry the last response with optional additional context.
+    
+    Args:
+        messages (List[Dict]): Current conversation messages
+        co (Cohere Client): Cohere API client
+        params (Dict): API parameters
+        additional_instruction (Optional[str]): Extra context for retry
+    
+    Returns:
+        Dict with the new assistant response
+    """
+    try:
         # Find the last user message
         for i in range(len(messages) - 1, -1, -1):
-            if messages[i]['role'] == 'user' and messages[i]['content'].strip():
-                user_message = messages[i]['content'].strip()
-                # Remove all messages after this user message (ignoring the last assistant response)
-                messages = messages[:i + 1]
+            if messages[i]['role'] == 'user':
+                # Trim messages to last user message
+                retry_messages = messages[:i+1]
                 break
-
-        # If additional instruction is provided, add it as a system message before retrying
+        
+        # Add additional instruction if provided
         if additional_instruction:
-            # Strip and validate the additional instruction
-            additional_instruction = additional_instruction.strip()
-            if not additional_instruction:
-                print(Fore.YELLOW + "Additional instruction is empty. Retry aborted.")
-                return
-
-            # Add the additional instruction as a system message
-            messages.append({"role": "system", "content": additional_instruction})
-
-        # Debug: Print the message history to verify it before the API call
-        print(Fore.CYAN + "\nDebug: Message history before retry:\n" + Style.RESET_ALL, json.dumps(messages, indent=2))
-
-        # Call the Cohere chat API with the adjusted message history
-        try:
-            response = co.chat(
-                **params,  # Keep the model and parameters consistent
-                messages=messages  # Override the messages parameter with the updated message list
-            )
-
-            # Extract the new assistant's response
-            assistant_response = response.message.content[0].text  # Adjust the attribute path if necessary
-
-            # Simulate streaming of the assistant's response in chunks
-            print(Fore.GREEN + f"\n- {assistant_name} (Retry):\n" + Style.RESET_ALL, end='')
-            display_response(assistant_response)  # Stream the response
-
-            # Append the new assistant's response to the message history
-            messages.append({"role": "assistant", "content": assistant_response})
-
-            # Save the updated history after the retry
-            save_history(messages)
-
-            # Generate speech from the assistant's response
-            generate_speech(assistant_response)
-        except Exception as e:
-            print(Fore.RED + f"Error during retry: {str(e)}")
-    else:
-        print(Fore.YELLOW + "No valid user message found to retry.")
+            retry_messages.append({
+                "role": "system", 
+                "content": f"[Additional Retry Instruction: {additional_instruction}]"
+            })
+        
+        # Call Cohere API with adjusted messages
+        response = co.chat(
+            **params,
+            messages=retry_messages
+        )
+        
+        # Extract and return response
+        return {
+            "message": response.message.content[0].text,
+            "messages": retry_messages
+        }
+    
+    except Exception as e:
+        logging.error(f"Retry failed: {e}")
+        return {
+            "message": f"Error during retry: {str(e)}",
+            "messages": messages
+        }
 
 # Directly print the response instead of streaming in chunks
 def display_response(response_text):
@@ -217,7 +351,7 @@ def display_response(response_text):
 
 def play_audio(output_path):
     """Play audio asynchronously with MPC-HC64."""
-    player_path = r"C:\Path\To\Player.exe"
+    player_path = r"F:\Users\xxxx\scoop\apps\k-lite-codec-pack-full-np\current\MPC-HC64\mpc-hc64.exe"
     subprocess.run([player_path, output_path], check=True)
 
 # Add a global toggle for TTS
@@ -268,36 +402,6 @@ def auto_send_recap(messages):
     recap_message = "(OOC: Pause Roleplay and lets recap the events. Before we resume i just want to check up on you so you are on the right track in the roleplay. Can you answer these questions for me: 1. What is the plot? 2. What is the setting? 3. What are our goals? 4. What is your role and my role? 5. What is the current situation? Feel free to use OOC at any point if you have any questions.)"
     messages.append({"role": "user", "content": recap_message})
     save_history(messages)
-    
-# Load the Keyword files specified in the configuration
-def load_keywords(keys_files):
-    global keywords
-    for keys_file in keys_files:
-        try:
-            print(f"Loading keywords file: {keys_file}")
-            with open(keys_file, "r") as file:
-                for line in file:
-                    line = line.strip()
-                    if not line or line.startswith("#"):  # Ignore empty lines or comments
-                        continue
-                    parts = line.split(";")
-                    if len(parts) != 3:
-                        print(f"Warning: Invalid format in line '{line}'. Skipping.")
-                        continue
-                    title, key_string, content = parts
-                    # Strip special characters and newlines from keys
-                    key_string = key_string.replace('', '').replace('', '')
-                    keys = [k.strip() for k in key_string.split(",")]
-                    keywords[title] = {
-                        "key": keys,
-                        "content": content.strip()
-                    }
-        except FileNotFoundError:
-            print(f"Warning: Keys file '{keys_file}' not found. Skipping.")
-
-# Load the filtered keywords from the specified keys files if any are specified
-if keys_files:  # Only attempt to load keywords if keys_files is not empty
-    load_keywords(keys_files)
 
 # Print the final loaded keywords for debugging purposes
 print(Fore.CYAN + f"Loaded keywords: {keywords}" + Style.RESET_ALL)
@@ -316,7 +420,6 @@ def find_matching_keywords(input_text):
             matching_keywords.append(keyword_data)
 
     return matching_keywords
-
 
 def append_new_keywords(messages, matching_keywords):
     global pending_keywords
@@ -424,16 +527,45 @@ while True:
         # Extract additional instructions if provided
         if ':' in user_input:
             additional_instruction = user_input.split(':', 1)[1].strip()
-            retry_last_response(messages, additional_instruction)
+            retry_result = retry_last_response(messages, co, params, additional_instruction)
         else:
-            retry_last_response(messages)
+            retry_result = retry_last_response(messages, co, params)
+
+        # Update the messages list with the retry result
+        messages = retry_result['messages']
+
+        # Display and handle the assistant's response immediately after retry
+        assistant_response = retry_result['message']
+        print(Fore.GREEN + f"\n- {assistant_name} (Retry):\n" + Style.RESET_ALL, end='')
+        
+        # Display the assistant response
+        display_response(assistant_response)
+
+        # Append the assistant's response to the message history
+        messages.append({"role": "assistant", "content": assistant_response})
+
+        # Save the updated history after retry
+        save_history(messages)
+
+        # Generate speech from the assistant's response
+        generate_speech(assistant_response)
+
+        # Continue to the next iteration
         continue
 
     # Find any matching entries for user input
-    matching_keywords = find_matching_keywords(user_input)
+    matching_keywords = keyword_manager.find_matching_keywords(user_input)
 
-    # Append new keywords without splitting multi-word phrases
-    append_new_keywords(messages, matching_keywords)
+    # Queue new keywords if found
+    keyword_manager.queue_new_keywords(matching_keywords)
+    
+    # Process the next keyword and add it to the message history if available
+    keyword_content = keyword_manager.process_next_keyword()
+    if keyword_content:
+        messages.append({
+            "role": "system",
+            "content": keyword_content['formatted_content']
+    })
 
     # Append the user's message (with context) to the message history
     messages.append({"role": "user", "content": user_input})
@@ -451,12 +583,6 @@ while True:
     
     # Extract the assistant's response
     assistant_response = response.message.content[0].text
-
-    # Find any matching keywords for the assistant's response (preemptively influence subsequent messages)
-    # matching_keywords_assistant = find_matching_keywords(assistant_response)
-
-    # Append new keywords from assistant's response without splitting multi-word phrases
-    # append_new_keywords(messages, matching_keywords_assistant)
 
     # Display assistant's response
     print(Fore.GREEN + f"\n- {assistant_name}:\n" + Style.RESET_ALL, end='')
