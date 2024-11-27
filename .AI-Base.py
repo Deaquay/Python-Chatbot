@@ -66,6 +66,7 @@ try:
     with open(system_message_file, 'r') as file:
         lines = file.readlines()
         current_section = "system_message"  # Default to system message section
+        
     for line in lines:
         stripped_line = line.strip()
         if not stripped_line or stripped_line.startswith("#"):  # Ignore empty lines or comments
@@ -175,8 +176,8 @@ class KeywordManager:
             matching_keywords (List[Dict]): List of matching keywords
         """
         for keyword in matching_keywords:
-            # Prefer the first key as a unique identifier
-            key_identifier = keyword['keys'][0].lower()
+            # Prefer the title as a unique identifier
+            key_identifier = keyword['title'].lower()
             
             # Only add if not already processed or pending
             if (key_identifier not in self.processed_keywords and 
