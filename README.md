@@ -30,11 +30,13 @@ ex: Capital;city,capital,Metropolis;Some information about capital that bot shou
 
 ### Commands
 - TTS: The tts command enables tts, but you need to host your own, and input info in the tts definition in the py file to use it.
-- Retry: Removes last message and tells api to retry it to regenerate it.
+- Retry: Removes last message and tells api to retry it to regenerate it, use retry: <instructions> with colon to send a system prompt to tell the ai how to behave.
 - Reset: Resets chat to start. Saves history.
 - Recap: Sends a message to pause RP and recap events. This is to break AI out of loops and bad behavior. Also so you know the ai isn't confused.
 - Exit: Quit, history is saved and resumed when you return. Reset history with reset command.
 
-### Broken/TODO
-- "retry: instructions" command is broken.  
-- keywords files might be broken
+### Changelog v0.2
+- "retry: instructions" command is fixed.
+- keywords files are fixed
+
+Currently keywords are injected one per message, so if you trigger multiple keywords they are sent to a queue and injected one by one beside your normal messages.

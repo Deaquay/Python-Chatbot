@@ -1,0 +1,4 @@
+Title;keyword1,keyword2,etcetc;Information to be injected together with title.
+Monkey;monkey,banana;Monkeys love bananas
+Metro One;metro,capital;capital city in a world named Keywords Sample 192 million citizens, mostly rundown slums, beautiful upper class districts.
+Keywords;keyword3;Keywords are written one entry per line in the txt file.

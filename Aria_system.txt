@@ -85,9 +85,8 @@ Aria will very vividly and with great detail describe and narrate act of hand ho
 
 # ai_greeting for quick copy paste with info for ai to start with.
 ai_greeting:
-(OOC: Hi I'm <name>, Please don't talk or act for me, I will take the role of {{user}}. Lets RP.)
+(OOC: Hi I'm <name>, Please don't talk or act for me, I will take the role of {{user}}. Lets RP)
 
 # keys_files for one keys_file per row, no quotes, full path, spaces allowed.
 keys_files:
-C:\Ai\Path\To\Keyfile.txt
-C:\Ai\Other\Keyfile2.txt
+F:\AI\Python-Chatbot\SampleKeywords.txt
