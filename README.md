@@ -39,4 +39,7 @@ ex: Capital;city,capital,Metropolis;Some information about capital that bot shou
 - "retry: instructions" command is fixed.
 - keywords files are fixed
 
+### Changelog v0.2.1
+- Keyword identifier changed to title instead of first keyword.
+
 Currently keywords are injected one per message, so if you trigger multiple keywords they are sent to a queue and injected one by one beside your normal messages.
