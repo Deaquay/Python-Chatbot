@@ -35,11 +35,14 @@ ex: Capital;city,capital,Metropolis;Some information about capital that bot shou
 - Recap: Sends a message to pause RP and recap events. This is to break AI out of loops and bad behavior. Also so you know the ai isn't confused.
 - Exit: Quit, history is saved and resumed when you return. Reset history with reset command.
 
-### Changelog v0.2
-- "retry: instructions" command is fixed.
-- keywords files are fixed
+### Changelog v0.2.2
+- Added a python file that can be run from cmd with "x:\Path\cwd\.VENV\Scripts\python.exe x:\Path\cwd\.start-ai.py" or by activating venv and running "python .start-ai.py" from cwd.
 
 ### Changelog v0.2.1
 - Keyword identifier changed to title instead of first keyword.
+
+### Changelog v0.2
+- "retry: instructions" command is fixed.
+- keywords files are fixed
 
 Currently keywords are injected one per message, so if you trigger multiple keywords they are sent to a queue and injected one by one beside your normal messages.
