@@ -36,7 +36,7 @@ ex: Capital;city,capital,Metropolis;Some information about capital that bot shou
 - Exit: Quit, history is saved and resumed when you return. Reset history with reset command.
 
 ### Changelog v0.2.2
-- Added a python file that can be run from cmd with "x:\Path\cwd\.VENV\Scripts\python.exe x:\Path\cwd\.start-ai.py" or by activating venv and running "python .start-ai.py" from cwd.
+- Added a python file that can be run from cmd with "x:\Path\cwd\\.VENV\Scripts\python.exe x:\Path\cwd\.start-ai.py" or by activating venv and running "python .start-ai.py" from cwd.
 
 ### Changelog v0.2.1
 - Keyword identifier changed to title instead of first keyword.
