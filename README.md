@@ -16,8 +16,8 @@ Comment out set HTTP_PROXY in .start-ai.bat.
 
 Set and save API keys there for easy management.
 
-Drop <name>_system.txt files into cwd. See Jailbreak_system.txt, Aina_system.txt and Aria_system.txt for different formats that work, plaintext, json & compressed.  
-Also take note of structure, the files have 3 sections, it's system_prompt from start ( starts reading doc as system_prompt, no section needed ) to  ai_greetings: section ( text to appear when bot is started. Not part of prompt, just for sake of copy pasting start  message. ), and then keys_files: section ( .txt files with keywords to inject data to ai at mention of a keyword. one file per line under keys_files: ) see example files.
+Drop <name>_system.txt files into system folder. See Jailbreak_system.txt, Aina_system.txt and Aria_system.txt for different formats that work, plaintext, json & compressed.  
+Also take note of structure, the files have 3 sections, it's system_prompt from start ( starts reading doc as system_prompt, no section needed ) to  ai_greetings: section ( text to appear when bot is started. Not part of prompt, just for sake of copy pasting start message.), and then keys_files: section ( .txt files with keywords to inject data to ai at mention of a keyword. one file per line under keys_files: ) see example files.
 
 Keywords files can be anywhere. Just input one filepath per row under keys_files: in Name_system.txt. No quotes.
 
