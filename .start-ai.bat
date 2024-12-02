@@ -12,9 +12,9 @@ REM Start option selection
 :choose_option
 echo Choose which AI to start by typing its number, or 0 to exit.
 
-REM Iterate through all *_system.txt files and list the available AIs
+REM Iterate through all *_system.txt files in system folder and list the available AIs
 set "index=1"
-for %%f in (%cwd%\*_system.txt) do (
+for %%f in (%cwd%\system\*_system.txt) do (
     set "charname=%%~nf"
     echo !index!. !charname:_system=!
     set "ai_!index!=!charname:_system=!"

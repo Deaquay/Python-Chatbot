@@ -32,7 +32,7 @@ co = cohere.ClientV2(api_key=api_key)
 assistant_name = sys.argv[1]
 
 # Define the path to the system message file based on the bot name
-system_message_file = f"{assistant_name}_system.txt"
+system_message_file = f"system/{assistant_name}_system.txt"
 
 # Define shared parameters for Cohere chat API
 params = {

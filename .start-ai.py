@@ -6,7 +6,8 @@ def list_ai_options(base_path):
     """
     Lists AI options based on the *_system.txt files in the specified directory.
     """
-    ai_files = list(base_path.glob("*_system.txt"))
+    system_path = base_path / "system"
+    ai_files = list(system_path.glob("*_system.txt"))
     options = {str(index): file.stem.replace("_system", "") for index, file in enumerate(ai_files, start=1)}
     return options
 
